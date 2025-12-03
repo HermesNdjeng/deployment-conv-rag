@@ -1,0 +1,23 @@
+# Base: official vLLM OpenAI-compatible image
+FROM vllm/vllm-openai:latest
+
+# Set working directory
+WORKDIR /workspace
+
+# Environment variables for model configuration
+# Override these at runtime via docker run -e or docker-compose
+ENV MODEL_NAME="mistralai/Mistral-7B-Instruct-v0.1"
+ENV MAX_MODEL_LEN="8192"
+ENV GPU_MEMORY_UTILIZATION="0.90"
+ENV PORT="8000"
+
+# Expose the API port
+EXPOSE 8000
+
+# Entrypoint: serve the model with vLLM
+# The image already has `vllm serve` as entrypoint, so we just pass args
+CMD ["sh", "-c", "vllm serve ${MODEL_NAME} \
+    --host 0.0.0.0 \
+    --port ${PORT} \
+    --max-model-len ${MAX_MODEL_LEN} \
+    --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION}"]
