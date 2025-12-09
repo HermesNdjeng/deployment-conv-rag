@@ -2,14 +2,19 @@ FROM vllm/vllm-openai:latest
 
 WORKDIR /workspace
 
-ENV MODEL_NAME="rednote-hilab/dots.ocr"
-ENV PORT="8000"
-ENV GPU_MEMORY_UTILIZATION="0.95"
+# Default config (can still be overridden at runtime with CLI args)
+ENV MODEL_NAME="rednote-hilab/dots.ocr" \
+    PORT="8000" \
+    GPU_MEMORY_UTILIZATION="0.95"
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "vllm serve ${MODEL_NAME} \
-    --host 0.0.0.0 \
-    --port ${PORT} \
-    --trust-remote-code \
-    --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION}"]
+# Base image already has: ENTRYPOINT ["vllm", "serve"]
+# We only provide default arguments here.
+CMD [
+  "rednote-hilab/dots.ocr",
+  "--host", "0.0.0.0",
+  "--port", "8000",
+  "--trust-remote-code",
+  "--gpu-memory-utilization", "0.95"
+]

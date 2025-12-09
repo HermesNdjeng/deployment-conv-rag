@@ -1,23 +1,27 @@
 # Base: official vLLM OpenAI-compatible image
 FROM vllm/vllm-openai:latest
 
-# Set working directory
+# Workdir (mainly for future extensions)
 WORKDIR /workspace
 
-# Environment variables for model configuration
-# Override these at runtime via docker run -e or docker-compose
-ENV MODEL_NAME="mistralai/Mistral-7B-Instruct-v0.1"
-ENV MAX_MODEL_LEN="8192"
-ENV GPU_MEMORY_UTILIZATION="0.90"
-ENV PORT="8000"
+# Default model/config (can be overridden at runtime with CLI args)
+ENV MODEL_NAME="Qwen/Qwen2.5-3B-Instruct" \
+    MAX_MODEL_LEN="8192" \
+    GPU_MEMORY_UTILIZATION="0.90" \
+    MAX_NUM_SEQS="64" \
+    PORT="8000"
 
-# Expose the API port
+# Expose API port
 EXPOSE 8000
 
-# Entrypoint: serve the model with vLLM
-# The image already has `vllm serve` as entrypoint, so we just pass args
-CMD ["sh", "-c", "vllm serve ${MODEL_NAME} \
-    --host 0.0.0.0 \
-    --port ${PORT} \
-    --max-model-len ${MAX_MODEL_LEN} \
-    --gpu-memory-utilization ${GPU_MEMORY_UTILIZATION}"]
+# vLLM image already has: ENTRYPOINT ["vllm", "serve"]
+ENTRYPOINT ["vllm", "serve"]
+# We just provide default arguments via CMD in exec form (no shell munging).
+CMD [
+  "Qwen/Qwen2.5-3B-Instruct",
+  "--host", "0.0.0.0",
+  "--port", "8000",
+  "--max-model-len", "8192",
+  "--gpu-memory-utilization", "0.90",
+  "--max-num-seqs", "64"
+]
