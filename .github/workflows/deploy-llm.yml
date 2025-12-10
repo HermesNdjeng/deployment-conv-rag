@@ -5,7 +5,7 @@ on:
     branches: [ "main" ]
     paths:
       - 'docker/**'
-  workflow_dispatch:           # allow manual trigger
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: hermesndj/rag-llm
@@ -15,6 +15,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Show disk usage before cleanup
+        run: df -h
+
+      - name: Free up disk space on runner
+        run: |
+          # Remove large preinstalled SDKs and tools you don't need
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
+
+          # Remove any existing Docker images/containers on the runner
+          sudo docker system prune -a -f --volumes || true
+
+      - name: Show disk usage after cleanup
+        run: df -h
+
       - name: Checkout code
         uses: actions/checkout@v4
 
@@ -64,13 +78,15 @@ jobs:
           HF_TOKEN: ${{ secrets.HUGGING_FACE_HUB_TOKEN }}
         run: |
           ssh -i ~/.ssh/ec2_key ${EC2_USER}@${EC2_HOST} << 'EOF'
+          export IMAGE_NAME="${IMAGE_NAME}"
           set -e
+
+          # Remove any old local images/containers if you don't need them
+          docker rm -f rag-llm || true
+          docker system prune -a -f --volumes || true
 
           # Pull latest image
           docker pull ${IMAGE_NAME}:latest
-
-          # Stop and remove old container if exists
-          docker rm -f rag-llm || true
 
           # Run new container
           docker run -d --gpus all \
@@ -79,5 +95,4 @@ jobs:
             -e HUGGING_FACE_HUB_TOKEN="${HF_TOKEN}" \
             --name rag-llm \
             ${IMAGE_NAME}:latest
-
           EOF
