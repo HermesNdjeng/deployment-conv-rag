@@ -27,6 +27,12 @@ repos:
     rev: v1.1.338
     hooks:
       - id: pyright                   # Type checking with enforcement
+  - repo: https://github.com/hadolint/hadolint
+    rev: v2.12.0
+    hooks:
+      - id: hadolint
+        name: Lint Dockerfiles with hadolint
+        files: ^docker/Dockerfile.*$
 
 # Exclude specific files/directories from pre-commit checks
 exclude: |
