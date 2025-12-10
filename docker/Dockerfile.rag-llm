@@ -1,5 +1,5 @@
 # Base: official vLLM OpenAI-compatible image
-FROM vllm/vllm-openai:latest
+FROM vllm/vllm-openai:nightly-434ac76a7c2f2eb6aac80bb3b73cf856e1bba0e6
 
 # Workdir (mainly for future extensions)
 WORKDIR /workspace
@@ -17,11 +17,4 @@ EXPOSE 8000
 # vLLM image already has: ENTRYPOINT ["vllm", "serve"]
 ENTRYPOINT ["vllm", "serve"]
 # We just provide default arguments via CMD in exec form (no shell munging).
-CMD [
-  "Qwen/Qwen2.5-3B-Instruct",
-  "--host", "0.0.0.0",
-  "--port", "8000",
-  "--max-model-len", "8192",
-  "--gpu-memory-utilization", "0.90",
-  "--max-num-seqs", "64"
-]
+CMD ["Qwen/Qwen2.5-3B-Instruct", "--host", "0.0.0.0", "--port", "8000", "--max-model-len", "8192", "--gpu-memory-utilization", "0.90", "--max-num-seqs", "64"]
