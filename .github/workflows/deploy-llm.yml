@@ -1,0 +1,83 @@
+name: Build, push, and deploy rag-llm
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'docker/**'
+  workflow_dispatch:           # allow manual trigger
+
+env:
+  IMAGE_NAME: hermesndj/rag-llm
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push rag-llm image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.rag-llm
+          push: true
+          platforms: linux/amd64
+          tags: |
+            ${{ env.IMAGE_NAME }}:latest
+            ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
+  deploy-to-ec2:
+    needs: build-and-push
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Install SSH client
+        run: sudo apt-get update && sudo apt-get install -y openssh-client
+
+      - name: Add EC2 host to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: Setup SSH key
+        run: |
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          chmod 600 ~/.ssh/ec2_key
+
+      - name: Deploy on EC2
+        env:
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+          EC2_USER: ${{ secrets.EC2_USER }}
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          HF_TOKEN: ${{ secrets.HUGGING_FACE_HUB_TOKEN }}
+        run: |
+          ssh -i ~/.ssh/ec2_key ${EC2_USER}@${EC2_HOST} << 'EOF'
+          set -e
+
+          # Pull latest image
+          docker pull ${IMAGE_NAME}:latest
+
+          # Stop and remove old container if exists
+          docker rm -f rag-llm || true
+
+          # Run new container
+          docker run -d --gpus all \
+            -p 8000:8000 \
+            --ipc=host \
+            -e HUGGING_FACE_HUB_TOKEN="${HF_TOKEN}" \
+            --name rag-llm \
+            ${IMAGE_NAME}:latest
+
+          EOF
