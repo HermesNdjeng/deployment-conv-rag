@@ -8,17 +8,25 @@ on:
 
 jobs:
   run-pre-commit:
-    runs-on: ubuntu-latest
+    runs-on:  ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper comparison
 
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version:  "3.11"
 
       - name: Install pre-commit
         run: pip install pre-commit
 
-      - name: Run pre-commit on all files
-        run: pre-commit run --all-files
+      - name: Install hadolint
+        run: |
+          wget -O /tmp/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+          chmod +x /tmp/hadolint
+          sudo mv /tmp/hadolint /usr/local/bin/hadolint
+
+      - name: Run pre-commit
+        uses: pre-commit/action@v3.0.0
