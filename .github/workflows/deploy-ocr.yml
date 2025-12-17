@@ -1,14 +1,14 @@
-name: Build, push, and deploy rag-llm
+name: Build, push, and deploy dots-ocr-vllm
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - 'docker/Dockerfile.rag-llm'
+      - 'docker/Dockerfile.dots-ocr-vllm'
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: hermesndj/rag-llm
+  IMAGE_NAME: hermesndj/dots-ocr
 
 jobs:
   build-and-push:
@@ -41,11 +41,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push rag-llm image
+      - name: Build and push dots-ocr image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.rag-llm
+          file: docker/Dockerfile.dots-ocr-vllm
           push: true
           platforms: linux/amd64
           tags: |
@@ -80,21 +80,20 @@ jobs:
         run: |
           ssh -i ~/.ssh/ec2_key ${EC2_USER}@${EC2_HOST} << EOF
           export IMAGE_NAME="${IMAGE_NAME}"
-          export API_KEY="${API_KEY}"
           set -e
 
-          # Remove old container
-          docker rm -f rag-llm || true
+          # Remove any old local images/containers if you don't need them
+          docker rm -f dots-ocr || true
 
           # Pull latest image
           docker pull ${IMAGE_NAME}:latest
 
           # Run new container
           docker run -d --gpus all \
-            -p 8000:8000 \
+            -p 8001:8000 \
             --ipc=host \
             -e HUGGING_FACE_HUB_TOKEN="${HF_TOKEN}" \
-            --name rag-llm \
+            --name dots-ocr \
             ${IMAGE_NAME}:latest \
             --api-key "${API_KEY}"
           EOF
