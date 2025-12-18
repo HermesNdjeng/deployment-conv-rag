@@ -1,14 +1,14 @@
-name: Build, push, and deploy dots-ocr-vllm
+name: Build, push, and deploy deepseek-ocr-vllm
 
 on:
   push:
     branches: [ "main" ]
     paths:
-      - 'docker/Dockerfile.dots-ocr-vllm'
+      - 'docker/Dockerfile.deepseek-ocr-vllm'
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: hermesndj/dots-ocr
+  IMAGE_NAME: hermesndj/deepseek-ocr
 
 jobs:
   build-and-push:
@@ -20,10 +20,7 @@ jobs:
 
       - name: Free up disk space on runner
         run: |
-          # Remove large preinstalled SDKs and tools you don't need
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL || true
-
-          # Remove any existing Docker images/containers on the runner
           sudo docker system prune -a -f --volumes || true
 
       - name: Show disk usage after cleanup
@@ -41,11 +38,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build and push dots-ocr image
+      - name: Build and push deepseek-ocr image
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: docker/Dockerfile.dots-ocr-vllm
+          file: docker/Dockerfile.deepseek-ocr-vllm
           push: true
           platforms: linux/amd64
           tags: |
@@ -82,18 +79,15 @@ jobs:
           export IMAGE_NAME="${IMAGE_NAME}"
           set -e
 
-          # Remove any old local images/containers if you don't need them
-          docker rm -f dots-ocr || true
+          docker rm -f deepseek-ocr || true
 
-          # Pull latest image
           docker pull ${IMAGE_NAME}:latest
 
-          # Run new container
           docker run -d --gpus all \
             -p 8001:8000 \
             --ipc=host \
             -e HUGGING_FACE_HUB_TOKEN="${HF_TOKEN}" \
-            --name dots-ocr \
-            ${IMAGE_NAME}:latest \
-            --api-key "${API_KEY}"
+            -e VLLM_API_KEY="${API_KEY}" \
+            --name deepseek-ocr-container \
+            ${IMAGE_NAME}:latest
           EOF
