@@ -1,14 +1,14 @@
-# EC2 Instance – conv-rag-machine
+# VM Instance from Hyperstack – radiant-bohr
 
 ## Overview
 
-- **Name**: `conv-rag-machine`
+- **Name**: `radiant-bohr`
 - **Purpose**: GPU worker for OCR (VLM) and RAG LLM inference
 
 ## Compute
 
-- **AMI**: Deep Learning AMI Neuron (Ubuntu 22.04)
-- **Instance type**: `g4dn.xlarge` (1× NVIDIA T4, 4 vCPUs, 16 GiB RAM)[web:33][web:67][web:246]
+- **Os Image**: Ubuntu Server 22.04 LTS R535 CUDA 12.2
+- **Instance type**: 1 L40 28 CPUs 58GB RAM 100GB Disk (root)
 
 ## Networking & Security
 
@@ -18,10 +18,3 @@
     - HTTP (TCP 80) – web / API access
     - HTTPS (TCP 443) – secure web / API access
   - Outbound: allowed to the internet (default)
-
-## Storage
-
-- **Root EBS volume**:
-  - Type: gp3
-  - Size: **200 GiB**
-  - Usage: OS, Docker images, model weights/cache, logs
