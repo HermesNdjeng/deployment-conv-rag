@@ -1,4 +1,4 @@
-name: Build, push, and deploy deepseek-ocr-vllm
+name: Build, push, and deploy deepseek-ocr
 
 on:
   push:
@@ -6,6 +6,14 @@ on:
     paths:
       - 'docker/Dockerfile.deepseek-ocr-vllm'
   workflow_dispatch:
+    inputs:
+      mode:
+        description: "What to run"
+        required: true
+        type: choice
+        options:
+          - build-only
+          - deploy-only
 
 env:
   IMAGE_NAME: hermesndj/deepseek-ocr
@@ -13,6 +21,9 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' && inputs.mode == 'build-only'
 
     steps:
       - name: Show disk usage before cleanup
@@ -50,8 +61,12 @@ jobs:
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
   deploy-to-ec2:
-    needs: build-and-push
     runs-on: ubuntu-latest
+    needs: build-and-push
+    if: >
+      always() &&
+      (github.event_name == 'push' ||
+      github.event_name == 'workflow_dispatch' && inputs.mode == 'deploy-only')
 
     steps:
       - name: Install SSH client
@@ -77,10 +92,10 @@ jobs:
         run: |
           ssh -i ~/.ssh/ec2_key ${EC2_USER}@${EC2_HOST} << EOF
           export IMAGE_NAME="${IMAGE_NAME}"
+          export API_KEY="${API_KEY}"
           set -e
 
           docker rm -f deepseek-ocr || true
-
           docker pull ${IMAGE_NAME}:latest
 
           docker run -d --gpus all \
