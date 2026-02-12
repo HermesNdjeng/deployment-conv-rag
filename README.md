@@ -43,7 +43,7 @@ This repository contains:
 ### Prerequisites
 
 - Docker & Docker Buildx
-- Any VM instance with GPU (NVIDIA CUDA 12.1+)
+- Any VM instance with GPU (NVIDIA CUDA 12.1+) with docker installed
 - Hugging Face API token
 - vLLM API key for authentication
 
@@ -196,6 +196,15 @@ deployment-conv-rag/
 
 
 ## Troubleshooting
+
+### Docker is not installed in the VM
+Ensure docker is installed in the VM. To download:
+```bash
+sudo apt update
+sudo apt install -y docker.io
+sudo systemctl enable --now docker
+```
+
 
 ### GPU not detected
 ```bash
